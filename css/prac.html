@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form with Name Field</title>
+    <style>
+        /* Styling the input field */
+        input[type="text"] {
+            width: 100%; /* This will make the input take the full width of its container */
+            padding: 10px; /* Adds padding inside the input box */
+            font-size: 1rem; /* Adjusts the font size inside the input box */
+            border: 1px solid #ccc; /* Adds a border */
+            border-radius: 4px; /* Rounds the corners of the input box */
+            box-sizing: border-box; /* Ensures padding and border are included in the width calculation */
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        form {
+            max-width: 400px; /* Sets a maximum width for the form */
+            margin: 20px auto; /* Centers the form on the page */
+        }
+    </style>
+</head>
+<body>
+    <form>
+        <label for="name">Full Name:</label>
+        <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+    </form>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/assets/flag-icon.min.css" rel="stylesheet">
+    <link href="css/styles.css" rel="stylesheet">
+    <title>Sign In / Sign Up / Chat</title>
+    <style>
+        /* Additional styles for chat interface */
+        #chat-container { display: none; flex-direction: column; height: 100vh; }
+        header { background-color: #333; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        #message-box { flex: 1; padding: 1rem; overflow-y: auto; background-color: #121214; color: white; }
+        #message-box div { margin: 10px 0; padding: 10px; border-radius: 4px; background-color: #444; }
+        #input-box { display: flex; align-items: center; padding: 1rem; background-color: #333; }
+        #file-label { cursor: pointer; margin-right: 10px; }
+        #message-input { flex: 1; padding: 10px; border-radius: 30px; border: 1px solid #444; background-color: #222; color: white; }
+        #send-btn { padding: 10px 20px; border-radius: 30px; border: none; background-color: #4CAF50; color: white; cursor: pointer; }
+        #logout-btn { background-color: #3c4bb9; color: white; border: none; border-radius: 50%; padding: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sign In Form -->
+        <div id="signinContainer">
+            <h1>Sign In</h1>
+            <form id="signinForm">
+                <input type="email" id="signinEmail" placeholder="Email" required>
+                <input type="password" id="signinPassword" placeholder="Password" required>
+                <button type="submit">Sign In</button>
+            </form>
+            <div class="toggle-form" id="showSignup">Don't have an account? Sign up</div>
+            <div class="or-divider">OR</div>
+        </div>
+
+        <!-- Sign Up Form -->
+        <div id="signupContainer" class="hidden">
+            <h1>Sign Up</h1>
+            <form id="signupForm" action="register.php" method="POST">
+                <div class="name-fields">
+                    <label for="signupFirstName">Name:</label>
+                    <input type="text" id="signupFirstName" name="firstname" placeholder="First Name" required>
+                    <input type="text" id="signupLastName" name="lastname" placeholder="Last Name " required>
+                </div>
+            
+                <div class="email-field-container">
+                    <label for="signupEmail">Email:</label>
+                    <input type="email" id="signupEmail" name="email" placeholder="xyz@gmail.com" required>
+                </div>
+            
+                <div class="phone-field">
+                    <label for="signupPhone">Phone Number:</label>
+                    <select id="countryCode" class="country-select" name="country_code" required>
+                        <option value="+1">+1 USA</option>
+                        <option value="+44">+44 UK</option>
+                        <option value="+91">+91 India</option>
+                    </select>
+                    <input type="tel" id="signupPhone" name="phone_number" class="phone-input" placeholder="Phone Number" required>
+                </div>
+            
+                <label for="signupPassword">Password:</label>
+                <input type="password" id="signupPassword" name="password" placeholder="Password" required>
+            
+                <label for="signupConfirmPassword">Confirm Password:</label>
+                <input type="password" id="signupConfirmPassword" placeholder="Confirm Password" required>
+            
+                <button type="submit">Sign Up</button>
+            </form>
+            
+            <div class="toggle-form" id="showSignin">Already have an account? Sign in</div>
+            <div class="or-divider">OR</div>
+        </div>
+
+        <!-- Social Login Buttons -->
+        <div class="auth-buttons">
+            <button class="auth-button google-auth" id="googleAuth">Sign in with Google</button>
+            <button class="auth-button linkedin-auth" id="linkedinAuth">Sign in with LinkedIn</button>
+        </div>
+    </div>
+
+    <!-- Chat Interface - Hidden by default -->
+    <div id="chat-container">
+        <header>
+            <h1>Generative AI Chat</h1>
+            <button id="logout-btn">Log Out</button>
+        </header>
+
+        <div id="message-box"></div>
+
+        <div id="input-box">
+            <label for="file-input" id="file-label">
+                <i class="fas fa-paperclip"></i>
+            </label>
+            <input type="file" id="file-input" style="display: none;">
+            <input type="text" id="message-input" placeholder="Type your message...">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="js/scripts.js"></script>
+
+    <script>
+        const signinForm = document.getElementById('signinForm');
+        const authContainer = document.querySelector('.container');
+        const chatContainer = document.getElementById('chat-container');
+        const logoutBtn = document.getElementById('logout-btn');
+        const sendBtn = document.getElementById('send-btn');
+        const messageInput = document.getElementById('message-input');
+        const messageBox = document.getElementById('message-box');
+
+        // On Sign In submission
+        signinForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            authContainer.style.display = 'none';  // Hide login container
+            chatContainer.style.display = 'flex';  // Show chat interface
+        });
+
+        // Handle sending a chat message
+        sendBtn.addEventListener('click', async function() {
+            const message = messageInput.value;
+            if (!message) return;
+
+            // Display user message
+            const userMessage = document.createElement('div');
+            userMessage.textContent = 'You: ' + message;
+            messageBox.appendChild(userMessage);
+
+            // OpenAI API call (replace with your API key)
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer YOUR_OPENAI_API_KEY`,  // Replace with your API key
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: "gpt-3.5-turbo",
+                    messages: [{ role: "user", content: message }]
+                })
+            });
+
+            const data = await response.json();
+            const botReply = data.choices[0].message.content;
+
+            // Display bot response
+            const botMessage = document.createElement('div');
+            botMessage.textContent = 'ChatGPT: ' + botReply;
+            messageBox.appendChild(botMessage);
+
+            // Clear input field
+            messageInput.value = '';
+            messageBox.scrollTop = messageBox.scrollHeight;  // Scroll to the bottom
+        });
+
+        // Log Out and show the login form again
+        logoutBtn.addEventListener('click', function() {
+            chatContainer.style.display = 'none';
+            authContainer.style.display = 'block';
+            messageBox.innerHTML = '';  // Clear chat history
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,334 @@
+/* General layout for forms */
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f0f2f5;
+}
+
+.container {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 400px; /* Slightly wider for better input spacing */
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.3rem; /* Increased gap for better spacing */
+}
+
+/* Aligning labels and inputs on the same row */
+.form-group-horizontal {
+    display: flex;
+    align-items: left;
+    justify-content: space-between;
+    gap: 1rem; /* More space between label and input */
+}
+
+.form-group-horizontal label {
+    width: 130px; /* Fixed width for label */
+    text-align: left;
+    font-weight: bold; /* Better label readability */
+}
+
+input, select {
+    width: 100%;
+    padding: 0.4rem; /* Increased padding for better UX */
+    border: 1px solid #ddd;
+    border-radius: 1px;
+    font-size: 1rem;
+    box-sizing: border-box; /* Ensures padding doesn't affect width */
+}
+
+button {
+    padding: 0.75rem;
+    background-color: #1877f2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+button:hover {
+    background-color: #166fe5;
+}
+
+.auth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    align-items: center;
+}
+
+.auth-button {
+    width: 80%;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.google-auth {
+    background-color: #db4437;
+    color: white;
+}
+
+.google-auth:hover {
+    background-color: #c53929;
+}
+
+.linkedin-auth {
+    background-color: #0077b5;
+    color: white;
+}
+
+.linkedin-auth:hover {
+    background-color: #006399;
+}
+
+.toggle-form {
+    text-align: center;
+    margin-top: 1rem;
+    color: #1877f2;
+    cursor: pointer;
+}
+
+.hidden {
+    display: none;
+}
+
+.or-divider {
+    text-align: center;
+    margin: 0.5rem 0;
+    color: #666;
+    position: relative;
+    font-size: 0.8rem;
+}
+
+.or-divider::before,
+.or-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 45%;
+    height: 1px;
+    background-color: #ddd;
+}
+
+.or-divider::before {
+    left: 0;
+}
+
+.or-divider::after {
+    right: 0;
+}
+
+.name-fields {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.name-fields input {
+    flex: 1;
+    min-width: 0;
+}
+
+.country-select {
+    width: 40%;
+}
+
+.phone-field {
+    display: flex;
+    gap: 10px;
+}
+
+.phone-field input {
+    flex: 1;
+    min-width: 1;
+    
+}
+
+/* Full Page Chat Interface */
+#chat-container {
+    display: none;
+    flex-direction: column;
+    height: 100vh; /* Full height of the viewport */
+    width: 100vw;  /* Full width of the viewport */
+    background-color: #121214;
+}
+
+header {
+    background-color: #333;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+#message-box {
+    flex: 1; /* Takes up the remaining height */
+    padding: 1rem;
+    overflow-y: auto;
+    background-color: #121214;
+    color: white;
+}
+
+#message-box div {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #444;
+}
+
+/* Container for the chat input at the bottom */
+#input-box {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center the prompt horizontally */
+    padding: 10px;
+    background-color: #333;
+    width: 100%;
+    border-top: 1px solid #444;
+    border-radius: 30px;
+    position: relative; /* Allow positioning the icons inside the container */
+}
+
+/* Hidden file input */
+#file-input {
+    display: none;
+}
+
+/* Style for the attachment icon */
+#file-label {
+    position: absolute;
+    left: 15px;
+    color: #ccc;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+/* Style for the input field */
+#message-input {
+    width: 100%;
+    max-width: 700px; /* Max width for the input field */
+    padding: 10px 50px 10px 40px; /* Padding adjusted for the attachment icon and send button */
+    border-radius: 30px;
+    border: 1px solid #444;
+    background-color: #222;
+    color: white;
+    font-size: 1rem;
+    box-sizing: border-box;
+    margin-right: 10px; /* Optional, to add space between input and send button */
+}
+
+/* Style for the send button */
+#send-btn {
+    position: absolute;
+    right: 15px;
+    padding: 10px 20px;
+    border-radius: 50%;
+    border: none;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#send-btn i {
+    font-size: 1.2rem;
+}
+
+/* Focus outline removal for the input field */
+#message-input:focus {
+    outline: none;
+}
+
+/* Hover effect for the icons */
+#file-label:hover,
+#send-btn:hover {
+    color: white;
+}
+
+
+
+#logout-btn {
+    background-color: #3c4bb9;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    padding: 10px;
+    cursor: pointer;
+}
+
+/* Flexbox layout for the container to align label and input side by side */
+.email-field-container {
+    display: flex;
+    align-items: center; /* Align label and input vertically in the center */
+    gap: 10px; /* Adds space between the label and the input field */
+    font-family: Arial, sans-serif;
+    margin-bottom: 15px;
+  }
+  
+  /* Label styling */
+  .email-field-container label {
+    font-size: 1rem;
+  }
+  
+  /* Input field styling */
+  .email-field-container input[type="email"] {
+    flex-grow: 1; /* Ensures the input field takes up remaining space */
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease-in-out;
+  }
+  
+  /* Placeholder color */
+  .email-field-container input[type="email"]::placeholder {
+    color: #999;
+  }
+  
+  /* Hover and focus effects for input field */
+  .email-field-container input[type="email"]:hover {
+    border-color: #888;
+  }
+  
+  .email-field-container input[type="email"]:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+  }
+  
+  /* Optional: For responsiveness */
+  @media (max-width: 600px) {
+    .email-field-container {
+      flex-direction: column; /* Stack label and input on smaller screens */
+      align-items: flex-start; /* Aligns them to the start when stacked */
+    }
+  
+    .email-field-container input[type="email"] {
+      width: 100%; /* Ensures input takes up the full width on smaller screens */
+    }
+  }
+  
