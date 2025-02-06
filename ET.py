@@ -1,18 +1,20 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from bs4 import BeautifulSoup
-import json
-import openai
 import os
 import time
-from datetime import datetime
-import csv
+import json
+import openai
 import pandas as pd
+from datetime import datetime
 from dotenv import load_dotenv
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException, WebDriverException
+from bs4 import BeautifulSoup
+import tiktoken
+import csv
 
 # Load environment variables
 load_dotenv()
@@ -23,18 +25,18 @@ if not openai.api_key:
     print("Error: OPENAI_API_KEY not found in environment variables")
     exit(1)
 
-# Ask the user to input the CSV filename
-csv_filename = input("Please enter the name of your CSV file (including .csv extension): ")
+# Use the fixed CSV file name "KB.csv"
+csv_filename = "KB.csv"
 
 # Read the CSV file
 try:
     df = pd.read_csv(csv_filename)
     # Convert DataFrame to list of dictionaries and ensure all required columns exist
     required_columns = ['Root Node', 'Root Link', 'P1 Name', 'P1 Link', 
-                       'P2 Name', 'P2 Link', 'P3 Name', 'P3 Link',
-                       'P4 Name', 'P4 Link', 'Leaf name', 'Leaf Link']
+                        'P2 Name', 'P2 Link', 'P3 Name', 'P3 Link',
+                        'P4 Name', 'P4 Link', 'Leaf name', 'Leaf Link']
     
-    print("Available columns in CSV:", df.columns.tolist())  # Add this line to debug
+    print("Available columns in CSV:", df.columns.tolist())
     
     if not all(col in df.columns for col in required_columns):
         print("Error: CSV file is missing required columns. Please ensure all required columns exist:")
@@ -59,56 +61,63 @@ chrome_options.add_argument('--window-size=1920,1080')
 chrome_options.add_argument('--remote-debugging-port=9222')
 
 # Initialize the browser with service
-from selenium.webdriver.chrome.service import Service
-
 service = Service()
 driver = webdriver.Chrome(options=chrome_options)
 
 # Function to scrape text from a given URL
 def scrape_text(url):
-    while True:  # Keep trying until successful
-        max_retries = 3
-        for attempt in range(max_retries):
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            driver.get(url)
+            time.sleep(10)  # Allow time for the page to load
+            
             try:
-                driver.get(url)
-                time.sleep(10)  # Increased initial wait time
-                
-                try:
-                    # Increased timeout to 30 seconds
-                    WebDriverWait(driver, 30).until(
-                        EC.presence_of_element_located((By.CLASS_NAME, 'ArticleDetailLeftContainer__box'))
-                    )
-                except TimeoutException:
-                    print(f"Warning: Timeout waiting for content on {url}, retrying...")
-                    driver.refresh()  # Try refreshing the page
-                    time.sleep(5)
-                    continue
-                except WebDriverException as e:
-                    print(f"WebDriver error: {e}")
-                    time.sleep(10)
-                    continue
-                
-                html = driver.page_source
-                soup = BeautifulSoup(html, 'html.parser')
-                main_content = soup.find('div', {'class': 'ArticleDetailLeftContainer__box'})
-                if main_content:
-                    text = main_content.get_text(separator='\n', strip=True)
-                    if text.strip():  # Ensure we got meaningful content
-                        return text
-                print(f"Warning: No content found for {url}, retrying...")
-            except Exception as e:
-                print(f"Attempt {attempt + 1} failed: {e}")
+                WebDriverWait(driver, 30).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, 'ArticleDetailLeftContainer__box'))
+                )
+            except TimeoutException:
+                print(f"Warning: Timeout waiting for content on {url}, retrying...")
+                driver.refresh()
+                time.sleep(5)
+                continue
+            except WebDriverException as e:
+                print(f"WebDriver error: {e}")
                 time.sleep(10)
-        print(f"All attempts failed for {url}, waiting 60 seconds before next round...")
-        time.sleep(60)  # Increased wait time between retry rounds
+                continue
+            
+            html = driver.page_source
+            soup = BeautifulSoup(html, 'html.parser')
+            main_content = soup.find('div', {'class': 'ArticleDetailLeftContainer__box'})
+            if main_content:
+                text = main_content.get_text(separator='\n', strip=True)
+                if text.strip():
+                    return text
+            print(f"Warning: No content found for {url}, retrying...")
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed: {e}")
+            time.sleep(10)
+    return None  # If all attempts fail, return None
 
-def chunk_text(text, chunk_size=200):
+def chunk_text_by_tokens(text, max_tokens=7000):
     if not text or not isinstance(text, str):
         print("Warning: Invalid text input for chunking")
         return []
-    words = text.split()
-    chunks = [' '.join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
-    return [chunk for chunk in chunks if chunk.strip()]
+    
+    tokenizer = tiktoken.get_encoding("cl100k_base")
+    tokens = tokenizer.encode(text)
+    chunks = []
+
+    start = 0
+    end = max_tokens
+    while start < len(tokens):
+        token_chunk = tokens[start:end]
+        chunk_text = tokenizer.decode(token_chunk)
+        chunks.append(chunk_text)
+        start += max_tokens
+        end += max_tokens
+
+    return chunks
 
 def embed_text_openai(text):
     max_retries = 3
@@ -142,33 +151,32 @@ def save_embeddings_to_json(embeddings, file_count):
     except Exception as e:
         print(f"Error saving embeddings to JSON: {e}")
 
-# Create a log CSV file
-def create_log_file():
-    log_filename = 'processing_log.csv'
-    if not os.path.exists(log_filename):
-        with open(log_filename, 'w', newline='') as file:
+# Create CSV file to log errors with leaf details
+def create_error_log_file():
+    error_log_filename = 'scraping_errors.csv'
+    if not os.path.exists(error_log_filename):
+        with open(error_log_filename, 'w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['Leaf name', 'Leaf Link', 'Chunk Status', 'Embedding Status', 'Num Chunks', 'Timestamp'])
-    return log_filename
+            writer.writerow(['Root Node', 'Root Link', 'P1 Name', 'P1 Link', 'P2 Name', 'P2 Link',
+                             'P3 Name', 'P3 Link', 'P4 Name', 'P4 Link', 'Leaf Name', 'Leaf Link', 'Error'])
+    return error_log_filename
 
-# Modified log function to write to CSV
-def log_to_csv(log_filename, leaf_name, leaf_link, chunk_status, embedding_status, num_chunks, timestamp):
+def log_error_to_csv(error_log_filename, leaf_data, error_message):
     try:
-        with open(log_filename, 'a', newline='') as file:
+        with open(error_log_filename, 'a', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow([leaf_name, leaf_link, chunk_status, embedding_status, num_chunks, timestamp])
-        print(f"Updated log for {leaf_name}: Chunk:{chunk_status}, Embedding:{embedding_status}, Chunks:{num_chunks}, Time:{timestamp}")
+            writer.writerow([leaf_data['Root Node'], leaf_data['Root Link'], leaf_data['P1 Name'], leaf_data['P1 Link'],
+                             leaf_data['P2 Name'], leaf_data['P2 Link'], leaf_data['P3 Name'], leaf_data['P3 Link'],
+                             leaf_data['P4 Name'], leaf_data['P4 Link'], leaf_data['Leaf name'], leaf_data['Leaf Link'], error_message])
+        print(f"Logged error for {leaf_data['Leaf name']} to {error_log_filename}")
     except Exception as e:
-        print(f"Error updating log in CSV: {e}")
-
+        print(f"Error writing to error log file: {e}")
 def get_processed_leaves():
-    """Return a set of already processed leaf links from the log file"""
     processed_leaves = set()
     log_filename = 'processing_log.csv'
     if os.path.exists(log_filename):
         try:
             log_df = pd.read_csv(log_filename)
-            # Only consider successfully processed leaves
             successful_leaves = log_df[
                 (log_df['Chunk Status'] == 'YES') & 
                 (log_df['Embedding Status'] == 'YES')
@@ -186,7 +194,7 @@ def scrape_chunk_and_embed(leaf_data):
     batch_size = 50
     file_count = 1
     id_counter = 1
-    log_filename = create_log_file()
+    error_log_filename = create_error_log_file()
 
     # Get the last successful ID from existing JSON files
     last_id = get_last_processed_id()
@@ -232,14 +240,13 @@ def scrape_chunk_and_embed(leaf_data):
                 scraped_text = scrape_text(leaf_link)
 
                 if scraped_text:
-                    chunks = chunk_text(scraped_text, chunk_size=200)
+                    chunks = chunk_text_by_tokens(scraped_text, max_tokens=7000)
                     print(f"Data for {leaf_name} broken into {len(chunks)} chunks.")
                     chunk_status = "YES"
                     
-                    all_chunks_embedded = True
                     for chunk in chunks:
                         embedding = None
-                        while embedding is None:  # Keep trying until we get an embedding
+                        while embedding is None:
                             embedding = embed_text_openai(chunk)
                             if embedding is None:
                                 print("Failed to get embedding, retrying after 60 seconds...")
@@ -270,23 +277,19 @@ def scrape_chunk_and_embed(leaf_data):
                             save_embeddings_to_json(embeddings_batch, file_count)
                             file_count += 1
                             embeddings_batch = []
-                            print("Pausing for 10 minutes to avoid IP restrictions...")
-                            time.sleep(600)
-                            print("Resuming operations...")
                     
                     success = True
                     log_to_csv(log_filename, leaf_name, leaf_link, chunk_status, "YES", len(chunks), timestamp)
                 else:
-                    print(f"Failed to scrape {leaf_link}, retrying...")
+                    print(f"Failed to scrape {leaf_link}, logging error...")
+                    log_error_to_csv(error_log_filename, leaf, "Scraping failed or timed out")
                     time.sleep(30)
         
-        idx += 1  # Only move to next item if current one is successful
+        idx += 1
 
-    # Save any remaining embeddings in the batch
     if embeddings_batch:
         save_embeddings_to_json(embeddings_batch, file_count)
 
-# Add this new function to get the last processed ID
 def get_last_processed_id():
     folder_path = "Chunks"
     if not os.path.exists(folder_path):
@@ -310,4 +313,4 @@ try:
     scrape_chunk_and_embed(leaf_data)
 finally:
     driver.quit()
-    print("Browser session closed successfully") 
+    print("Browser session closed successfully")
